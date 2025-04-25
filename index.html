@@ -1,9 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My GitHub Image Album</title>
+  <title>My Cloudinary Image Album</title>
   <style>
     body {
       font-family: sans-serif;
@@ -17,73 +15,63 @@
   </style>
 </head>
 <body>
-  <h1>My Image Album</h1>
+  <h1>My Cloudinary Image Album</h1>
   <input type="file" id="fileInput" accept="image/*">
   <div id="gallery"></div>
 
   <script>
-    const username = 'Vkingsevent';
-    const repo = 'my-image-album';
-    const token = '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'; // Replace this with your updated token when it expires
-    const branch = 'main';
+    const cloudName = 'dmx3gppso'; // Your Cloudinary Cloud Name
+    const uploadPreset = 'Imageuploader'; // Your Cloudinary Upload Preset
 
     const fileInput = document.getElementById('fileInput');
     const gallery = document.getElementById('gallery');
 
+    // Function to load images from Cloudinary
     async function loadImages() {
-      try {
-        const response = await fetch(`https://api.github.com/repos/${username}/${repo}/contents/images`);
-        if (!response.ok) throw new Error('Failed to load images');
-        const files = await response.json();
+      const response = await fetch(`https://res.cloudinary.com/${cloudName}/image/list/images.json`);
+      const data = await response.json();
+      const files = data.resources || [];
 
-        gallery.innerHTML = '';
-        files.forEach(file => {
-          if (file.download_url) {
-            const img = document.createElement('img');
-            img.src = file.download_url;
-            gallery.appendChild(img);
-          }
-        });
-      } catch (error) {
-        alert('Error loading images: ' + error.message);
-      }
+      gallery.innerHTML = '';
+      files.forEach(file => {
+        if (file.url) {
+          const img = document.createElement('img');
+          img.src = file.url;
+          gallery.appendChild(img);
+        }
+      });
     }
 
+    // Function to upload image to Cloudinary
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const content = reader.result.split(',')[1];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset); // Optional: use if you have an upload preset
 
-        try {
-          const upload = await fetch(`https://api.github.com/repos/${username}/${repo}/contents/images/${file.name}`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `token ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              message: `Add ${file.name}`,
-              content: content,
-              branch: branch
-            })
-          });
+      try {
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData
+        });
 
-          if (upload.ok) {
-            alert('Image uploaded!');
-            loadImages();
-          } else {
-            throw new Error('Upload failed');
-          }
-        } catch (error) {
-          alert('Error uploading image: ' + error.message);
+        const result = await uploadResponse.json();
+
+        if (result.secure_url) {
+          alert('Image uploaded!');
+          loadImages();  // Refresh the gallery
+        } else {
+          alert('Upload failed');
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        alert('Error during upload');
+        console.error(error);
+      }
     });
 
+    // Initial load of images
     loadImages();
   </script>
 </body>
