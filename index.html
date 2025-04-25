@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Cloudinary Image Album</title>
+  <title>Shared Cloudinary Album</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
     }
-    #gallery img {
-      width: 150px;
-      margin: 10px;
-      border: 1px solid #ccc;
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .img-container {
       position: relative;
+      margin: 10px;
+    }
+    .img-container img {
+      width: 150px;
+      border: 1px solid #ccc;
     }
     .delete-btn {
       position: absolute;
@@ -26,94 +33,76 @@
   </style>
 </head>
 <body>
-  <h1>My Cloudinary Image Album</h1>
+  <h1>Shared Cloudinary Album</h1>
   <input type="file" id="fileInput" accept="image/*">
   <div id="gallery"></div>
 
   <script>
     const cloudName = 'dmx3gppso';
     const uploadPreset = 'Imageuploader';
+    const folder = 'myalbum'; // Optional: define your image folder in Cloudinary
 
     const fileInput = document.getElementById('fileInput');
     const gallery = document.getElementById('gallery');
 
-    // Load images from localStorage when the page loads
-    window.onload = () => {
-      const storedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
-      storedImages.forEach(url => displayImage(url));
-    };
-
-    // Upload image to Cloudinary
+    // Upload to Cloudinary
     async function uploadImage(file) {
       const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', uploadPreset);
+      formData.append('folder', folder);
 
-      const response = await fetch(url, {
+      const res = await fetch(url, {
         method: 'POST',
         body: formData
       });
 
-      const data = await response.json();
-      return data.secure_url;
+      const data = await res.json();
+      return data;
     }
 
-    // Display uploaded image in the gallery with delete button
-    function displayImage(url) {
-      const imgContainer = document.createElement('div');
-      imgContainer.style.position = 'relative';
-      
+    // Display an image
+    function displayImage(url, publicId) {
+      const container = document.createElement('div');
+      container.className = 'img-container';
+
       const img = document.createElement('img');
       img.src = url;
 
-      const deleteBtn = document.createElement('button');
-      deleteBtn.classList.add('delete-btn');
-      deleteBtn.innerHTML = 'X';
+      const btn = document.createElement('button');
+      btn.className = 'delete-btn';
+      btn.innerText = 'X';
+      btn.onclick = () => deleteImage(publicId, container);
 
-      // Delete image from gallery and from Cloudinary
-      deleteBtn.addEventListener('click', async () => {
-        await deleteImage(url); // Delete from Cloudinary
-        imgContainer.remove();  // Remove from gallery
-        removeFromLocalStorage(url); // Remove from localStorage
+      container.appendChild(img);
+      container.appendChild(btn);
+      gallery.appendChild(container);
+    }
+
+    // Delete image
+    async function deleteImage(publicId, element) {
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/delete_by_token`;
+
+      const res = await fetch(cloudinaryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: publicId })
       });
 
-      imgContainer.appendChild(img);
-      imgContainer.appendChild(deleteBtn);
-      gallery.appendChild(imgContainer);
+      element.remove();
     }
 
-    // Delete image from Cloudinary
-    async function deleteImage(url) {
-      const publicId = url.split('/').pop().split('.')[0]; // Extract public ID from URL
-      const deleteUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload/${publicId}`;
-      
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${'YOUR_CLOUDINARY_API_KEY'}` // Add your Cloudinary API key
-        }
+    // Fetch all images from Cloudinary using search API (needs backend if using secret)
+    async function loadImages() {
+      const response = await fetch(`https://res.cloudinary.com/${cloudName}/image/list/${folder}.json`);
+      if (!response.ok) return alert('Make sure your Cloudinary folder is public and contains a .json list');
+      const data = await response.json();
+
+      gallery.innerHTML = '';
+      data.resources.forEach(item => {
+        displayImage(item.secure_url, item.delete_token);
       });
-
-      if (response.ok) {
-        console.log('Image deleted from Cloudinary');
-      } else {
-        alert('Failed to delete image from Cloudinary');
-      }
-    }
-
-    // Store image URL in localStorage
-    function storeImageUrl(url) {
-      const storedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
-      storedImages.push(url);
-      localStorage.setItem('uploadedImages', JSON.stringify(storedImages));
-    }
-
-    // Remove image URL from localStorage
-    function removeFromLocalStorage(url) {
-      let storedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
-      storedImages = storedImages.filter(storedUrl => storedUrl !== url);
-      localStorage.setItem('uploadedImages', JSON.stringify(storedImages));
     }
 
     fileInput.addEventListener('change', async () => {
@@ -121,15 +110,15 @@
       if (!file) return;
 
       try {
-        const imageUrl = await uploadImage(file);
-        displayImage(imageUrl);
-        storeImageUrl(imageUrl); // Store image URL in localStorage
-        alert('Image uploaded successfully!');
+        const data = await uploadImage(file);
+        displayImage(data.secure_url, data.delete_token);
       } catch (err) {
         alert('Upload failed.');
         console.error(err);
       }
     });
+
+    loadImages();
   </script>
 </body>
 </html>
