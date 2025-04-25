@@ -11,6 +11,17 @@
       width: 150px;
       margin: 10px;
       border: 1px solid #ccc;
+      position: relative;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -26,6 +37,13 @@
     const fileInput = document.getElementById('fileInput');
     const gallery = document.getElementById('gallery');
 
+    // Load images from localStorage when the page loads
+    window.onload = () => {
+      const storedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+      storedImages.forEach(url => displayImage(url));
+    };
+
+    // Upload image to Cloudinary
     async function uploadImage(file) {
       const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
       const formData = new FormData();
@@ -41,10 +59,61 @@
       return data.secure_url;
     }
 
+    // Display uploaded image in the gallery with delete button
     function displayImage(url) {
+      const imgContainer = document.createElement('div');
+      imgContainer.style.position = 'relative';
+      
       const img = document.createElement('img');
       img.src = url;
-      gallery.appendChild(img);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.classList.add('delete-btn');
+      deleteBtn.innerHTML = 'X';
+
+      // Delete image from gallery and from Cloudinary
+      deleteBtn.addEventListener('click', async () => {
+        await deleteImage(url); // Delete from Cloudinary
+        imgContainer.remove();  // Remove from gallery
+        removeFromLocalStorage(url); // Remove from localStorage
+      });
+
+      imgContainer.appendChild(img);
+      imgContainer.appendChild(deleteBtn);
+      gallery.appendChild(imgContainer);
+    }
+
+    // Delete image from Cloudinary
+    async function deleteImage(url) {
+      const publicId = url.split('/').pop().split('.')[0]; // Extract public ID from URL
+      const deleteUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload/${publicId}`;
+      
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${'YOUR_CLOUDINARY_API_KEY'}` // Add your Cloudinary API key
+        }
+      });
+
+      if (response.ok) {
+        console.log('Image deleted from Cloudinary');
+      } else {
+        alert('Failed to delete image from Cloudinary');
+      }
+    }
+
+    // Store image URL in localStorage
+    function storeImageUrl(url) {
+      const storedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+      storedImages.push(url);
+      localStorage.setItem('uploadedImages', JSON.stringify(storedImages));
+    }
+
+    // Remove image URL from localStorage
+    function removeFromLocalStorage(url) {
+      let storedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+      storedImages = storedImages.filter(storedUrl => storedUrl !== url);
+      localStorage.setItem('uploadedImages', JSON.stringify(storedImages));
     }
 
     fileInput.addEventListener('change', async () => {
@@ -54,6 +123,7 @@
       try {
         const imageUrl = await uploadImage(file);
         displayImage(imageUrl);
+        storeImageUrl(imageUrl); // Store image URL in localStorage
         alert('Image uploaded successfully!');
       } catch (err) {
         alert('Upload failed.');
