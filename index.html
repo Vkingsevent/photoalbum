@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My GitHub Image Album</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+    }
+    #gallery img {
+      width: 150px;
+      margin: 10px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>My Image Album</h1>
+  <input type="file" id="fileInput" accept="image/*">
+  <div id="gallery"></div>
+
+  <script>
+    const username = 'Vkingsevent';
+    const repo = 'my-image-album';
+    const token = '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';
+    const branch = 'main';
+
+    const fileInput = document.getElementById('fileInput');
+    const gallery = document.getElementById('gallery');
+
+    async function loadImages() {
+      const response = await fetch(`https://api.github.com/repos/${username}/${repo}/contents/images`);
+      const files = await response.json();
+
+      gallery.innerHTML = '';
+      files.forEach(file => {
+        if (file.download_url) {
+          const img = document.createElement('img');
+          img.src = file.download_url;
+          gallery.appendChild(img);
+        }
+      });
+    }
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const content = reader.result.split(',')[1];
+
+        const upload = await fetch(`https://api.github.com/repos/${username}/${repo}/contents/images/${file.name}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: `Add ${file.name}`,
+            content: content,
+            branch: branch
+          })
+        });
+
+        if (upload.ok) {
+          alert('Image uploaded!');
+          loadImages();
+        } else {
+          alert('Upload failed');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    loadImages();
+  </script>
+</body>
+</html>
