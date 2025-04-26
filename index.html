@@ -1,124 +1,138 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Shared Cloudinary Album</title>
+  <meta charset="UTF-8">
+  <title>My Cloudinary Album</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
+      background: #f0f0f0;
     }
     #gallery {
+      margin-top: 20px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
+      gap: 20px;
     }
-    .img-container {
+    .img-card {
       position: relative;
-      margin: 10px;
+      display: inline-block;
     }
-    .img-container img {
+    .img-card img {
       width: 150px;
-      border: 1px solid #ccc;
+      border: 2px solid #ccc;
+      border-radius: 8px;
     }
     .delete-btn {
       position: absolute;
-      top: 5px;
-      right: 5px;
-      background-color: red;
+      top: -10px;
+      right: -10px;
+      background: red;
       color: white;
       border: none;
       border-radius: 50%;
+      width: 24px;
+      height: 24px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>Shared Cloudinary Album</h1>
-  <input type="file" id="fileInput" accept="image/*">
-  <div id="gallery"></div>
 
-  <script>
-    const cloudName = 'dmx3gppso';
-    const uploadPreset = 'Imageuploader';
-    const folder = 'myalbum'; // Optional: define your image folder in Cloudinary
+<h1>My Cloudinary Album</h1>
+<input type="file" id="fileInput" accept="image/*">
+<div id="gallery"></div>
 
-    const fileInput = document.getElementById('fileInput');
-    const gallery = document.getElementById('gallery');
+<script>
+  const cloudName = 'dmx3gppso';  // your cloud name
+  const uploadPreset = 'Imageuploader';  // your upload preset
+  const folderName = 'myalbum';  // folder where images are stored
 
-    // Upload to Cloudinary
-    async function uploadImage(file) {
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('folder', folder);
+  const fileInput = document.getElementById('fileInput');
+  const gallery = document.getElementById('gallery');
 
-      const res = await fetch(url, {
+  // Function to fetch and display all images
+  async function loadImages() {
+    gallery.innerHTML = 'Loading...';
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload?prefix=${folderName}/&max_results=100`, {
+        headers: {
+          'Authorization': 'Basic ' + btoa('API_KEY:API_SECRET')  // We can't directly use authorization here in frontend (security issue)
+        }
+      });
+      const data = await response.json();
+      gallery.innerHTML = '';
+
+      if (data.resources && data.resources.length > 0) {
+        data.resources.forEach(file => {
+          const imgCard = document.createElement('div');
+          imgCard.className = 'img-card';
+          
+          const img = document.createElement('img');
+          img.src = file.secure_url;
+          img.alt = file.public_id;
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.textContent = 'X';
+          deleteBtn.onclick = () => deleteImage(file.public_id);
+
+          imgCard.appendChild(img);
+          imgCard.appendChild(deleteBtn);
+          gallery.appendChild(imgCard);
+        });
+      } else {
+        gallery.innerHTML = 'No images found.';
+      }
+    } catch (error) {
+      gallery.innerHTML = 'Error loading images.';
+      console.error(error);
+    }
+  }
+
+  // Upload a new image
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+    formData.append('folder', folderName);
+
+    try {
+      const upload = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
         method: 'POST',
         body: formData
       });
 
-      const data = await res.json();
-      return data;
-    }
-
-    // Display an image
-    function displayImage(url, publicId) {
-      const container = document.createElement('div');
-      container.className = 'img-container';
-
-      const img = document.createElement('img');
-      img.src = url;
-
-      const btn = document.createElement('button');
-      btn.className = 'delete-btn';
-      btn.innerText = 'X';
-      btn.onclick = () => deleteImage(publicId, container);
-
-      container.appendChild(img);
-      container.appendChild(btn);
-      gallery.appendChild(container);
-    }
-
-    // Delete image
-    async function deleteImage(publicId, element) {
-      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/delete_by_token`;
-
-      const res = await fetch(cloudinaryUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: publicId })
-      });
-
-      element.remove();
-    }
-
-    // Fetch all images from Cloudinary using search API (needs backend if using secret)
-    async function loadImages() {
-      const response = await fetch(`https://res.cloudinary.com/${cloudName}/image/list/${folder}.json`);
-      if (!response.ok) return alert('Make sure your Cloudinary folder is public and contains a .json list');
-      const data = await response.json();
-
-      gallery.innerHTML = '';
-      data.resources.forEach(item => {
-        displayImage(item.secure_url, item.delete_token);
-      });
-    }
-
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-
-      try {
-        const data = await uploadImage(file);
-        displayImage(data.secure_url, data.delete_token);
-      } catch (err) {
+      if (upload.ok) {
+        alert('Image uploaded!');
+        loadImages();
+      } else {
         alert('Upload failed.');
-        console.error(err);
       }
-    });
+    } catch (error) {
+      alert('Upload error.');
+      console.error(error);
+    }
+  });
 
-    loadImages();
-  </script>
+  // Delete an image
+  async function deleteImage(publicId) {
+    const confirmDelete = confirm('Are you sure you want to delete this image?');
+    if (!confirmDelete) return;
+
+    alert('Delete function cannot work fully on frontend due to security! Need to create a backend server to authorize deletion.');
+
+    // To actually delete: you need a backend server to securely call Cloudinary's delete API with your API secret.
+  }
+
+  // Load images initially
+  loadImages();
+</script>
+
 </body>
 </html>
