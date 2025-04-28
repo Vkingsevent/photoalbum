@@ -1,47 +1,65 @@
 body {
   font-family: Arial, sans-serif;
   text-align: center;
-  padding: 20px;
+  margin: 20px;
+  background-color: #f9f9f9;
+}
+
+h1 {
+  color: #333;
+}
+
+.upload-section {
+  margin-bottom: 20px;
+}
+
+input[type="file"],
+input[type="text"],
+button {
+  margin: 5px;
+  padding: 8px;
+  font-size: 16px;
+}
+
+button {
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #45a049;
 }
 
 #gallery {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: 20px;
+  gap: 20px;
 }
 
 .img-card {
-  border: 1px solid #ccc;
-  margin: 10px;
+  background: white;
   padding: 10px;
-  width: 220px;
-  border-radius: 10px;
-  box-shadow: 2px 2px 8px #aaa;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  width: 200px;
 }
 
 .img-card img {
-  width: 200px;
-  height: auto;
-  border-radius: 8px;
+  width: 100%;
+  border-radius: 6px;
+}
+
+.img-card p {
+  margin: 10px 0 5px;
+  font-weight: bold;
 }
 
 .img-card button {
-  margin: 5px;
-  padding: 5px 10px;
-  border: none;
-  background-color: #4CAF50;
-  color: white;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.img-card button:hover {
-  background-color: #45a049;
-}
-
-input[type="file"],
-input[type="text"],
-button {
-  margin: 10px;
+  margin: 5px 2px;
+  padding: 5px 8px;
+  font-size: 14px;
 }
