@@ -1,0 +1,47 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 20px;
+}
+
+#gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.img-card {
+  border: 1px solid #ccc;
+  margin: 10px;
+  padding: 10px;
+  width: 220px;
+  border-radius: 10px;
+  box-shadow: 2px 2px 8px #aaa;
+}
+
+.img-card img {
+  width: 200px;
+  height: auto;
+  border-radius: 8px;
+}
+
+.img-card button {
+  margin: 5px;
+  padding: 5px 10px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.img-card button:hover {
+  background-color: #45a049;
+}
+
+input[type="file"],
+input[type="text"],
+button {
+  margin: 10px;
+}
