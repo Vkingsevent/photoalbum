@@ -2,130 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cloudinary Album Viewer</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #f0f0f0;
-    }
-    #gallery {
-      margin-top: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-    }
-    .img-card {
-      position: relative;
-      display: inline-block;
-    }
-    .img-card img {
-      width: 150px;
-      border: 2px solid #ccc;
-      border-radius: 8px;
-    }
-    .delete-btn {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      background: red;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-    }
-  </style>
+  <title>My Album</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>My Album</h1>
-<input type="file" id="fileInput" accept="image/*">
-<div id="gallery"></div>
+  <h1>📸 My Album</h1>
 
-<script>
-  const cloudName = 'dmx3gppso';
-  const uploadPreset = 'Imageuploader';
-  const folderName = 'myalbum';
+  <input type="file" id="fileInput">
+  <input type="text" id="titleInput" placeholder="Enter image title">
+  <button onclick="uploadImage()">Upload</button>
 
-  const fileInput = document.getElementById('fileInput');
-  const gallery = document.getElementById('gallery');
+  <div id="gallery"></div>
 
-  async function loadImages() {
-    gallery.innerHTML = 'Loading...';
-    try {
-      const response = await fetch(`https://res.cloudinary.com/${cloudName}/image/list/${folderName}.json`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch list');
-      }
-      const data = await response.json();
-      gallery.innerHTML = '';
-
-      if (data.resources && data.resources.length > 0) {
-        data.resources.forEach(file => {
-          const imgCard = document.createElement('div');
-          imgCard.className = 'img-card';
-          
-          const img = document.createElement('img');
-          img.src = `https://res.cloudinary.com/${cloudName}/image/upload/v${file.version}/${file.public_id}.${file.format}`;
-          img.alt = file.public_id;
-
-          const deleteBtn = document.createElement('button');
-          deleteBtn.className = 'delete-btn';
-          deleteBtn.textContent = 'X';
-          deleteBtn.onclick = () => deleteImage(file.public_id);
-
-          imgCard.appendChild(img);
-          imgCard.appendChild(deleteBtn);
-          gallery.appendChild(imgCard);
-        });
-      } else {
-        gallery.innerHTML = 'No images found.';
-      }
-    } catch (error) {
-      gallery.innerHTML = 'Error loading images.';
-      console.error(error);
-    }
-  }
-
-  // Upload a new image
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', uploadPreset);
-    formData.append('folder', folderName);
-
-    try {
-      const upload = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (upload.ok) {
-        alert('Image uploaded!');
-        loadImages();
-      } else {
-        alert('Upload failed.');
-      }
-    } catch (error) {
-      alert('Upload error.');
-      console.error(error);
-    }
-  });
-
-  // Delete an image
-  async function deleteImage(publicId) {
-    alert('Delete function needs backend server. Not possible from frontend directly.');
-  }
-
-  // Load images initially
-  loadImages();
-</script>
+  <!-- Cloudinary Upload + Firebase Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script type="module" src="script.js"></script>
 
 </body>
 </html>
